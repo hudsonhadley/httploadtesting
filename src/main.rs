@@ -1,28 +1,22 @@
 use tokio;
-
-use httploadtesting;
+use httploadtesting::Config;
 
 
 
 #[tokio::main]
 async fn main() {
-    let (path, number) = httploadtesting::config();
+    let config = Config::new();
 
-    let mut success = true;
-    for i in 0..number {
-        let status = httploadtesting::status(&path).await;
+    let mut success_count = 0;
 
-        match status {
-            Ok(val) if val != 404 => continue,
-            _ => {
-                println!("Connection {} failed", i + 1);
-                success = false;
-                break;
-            }
+    for _ in 0..config.number() {
+
+        match config.status().await {
+            Ok(val) if val != 404 => success_count += 1,
+            _ => continue,
         }
     }
 
-    if success {
-        println!("{} connections made successfully", number);
-    }
+    println!("Successes: {}", success_count);
+    println!("Failures: {}", config.number() - success_count);
 }
