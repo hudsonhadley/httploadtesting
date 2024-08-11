@@ -1,4 +1,3 @@
-use reqwest;
 use tokio;
 
 use httploadtesting;
@@ -9,11 +8,21 @@ use httploadtesting;
 async fn main() {
     let (path, number) = httploadtesting::config();
 
-    let status = reqwest::get(path)
-        .await
-        .unwrap()
-        .status()
-        .as_u16();
+    let mut success = true;
+    for i in 0..number {
+        let status = httploadtesting::status(&path).await;
 
-    println!("Response code: {status}");
+        match status {
+            Ok(val) if val != 404 => continue,
+            _ => {
+                println!("Connection {} failed", i + 1);
+                success = false;
+                break;
+            }
+        }
+    }
+
+    if success {
+        println!("{} connections made successfully", number);
+    }
 }

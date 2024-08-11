@@ -1,4 +1,5 @@
-use clap::{ Arg, Command };
+use clap::{Arg, Command };
+use reqwest::Error;
 
 pub fn config() -> (String, usize) {
     let m = Command::new("foo")
@@ -16,4 +17,14 @@ pub fn config() -> (String, usize) {
     let number: usize = number.parse().unwrap();
 
     (String::from(path), number)
+}
+
+pub async fn status(url: &str) -> Result<u16, Error> {
+    let response = reqwest::get(url)
+        .await;
+    
+    match response {
+        Ok(r) => Ok(r.status().as_u16()),
+        Err(e) => Err(e)
+    }
 }
