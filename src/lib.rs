@@ -1,6 +1,8 @@
 use clap::{Arg, Command };
+use reqwest;
 use reqwest::Error;
 
+#[derive(Clone)]
 pub struct Config {
     url: String,
     number: usize,
@@ -47,10 +49,8 @@ impl Config {
         self.threads
     }
 
-    pub async fn status(&self) -> Result<u16, Error> {
-        let response = reqwest::get(String::from(&self.url))
-            .await;
-
+    pub fn status(&self) -> Result<u16, Error> {
+        let response = reqwest::blocking::get(String::from(&self.url));
         match response {
             Ok(r) => Ok(r.status().as_u16()),
             Err(e) => Err(e)
