@@ -4,10 +4,23 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use threadpool::ThreadPool;
 use httploadtesting::Config;
 
+/// Gets the current time since January 1, 1970. Times are returned in milliseconds, so to be used
+/// as seconds, divide by 1000 (use f64 for decimal points).
+///
+/// # Examples
+/// ```
+/// let start_time = get_time_millis();
+/// std::thread::sleep(std::time::Duration::from_millis(1000);
+/// let end_time = get_time_millis();
+///
+/// assert_eq!(1000, end_time - start_time);
+/// ```
 fn get_time_millis() -> u128 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()
 }
 
+/// Prints the results of our http load testing for a given url with statuses referring to if the
+/// connection was successful or not, and the times referring to how long it took to connect.
 fn print_results(url: &String, statuses: &Vec<bool>, times: &Vec<u128>) {
     // Get all the successes
     let mut success_count = 0;

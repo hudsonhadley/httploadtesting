@@ -3,6 +3,10 @@ use reqwest;
 use reqwest::Error;
 use std::fs;
 
+/// A struct which defines the configuration we want to run our http load testing with. Each config
+/// has a list of urls (length of 1 if a URL is provided; variable length if a file is provided),
+/// the number of connections we want to make, and the number of threads we want to use to make
+/// those connections. Config structs are initialized based on the command line arguments.
 #[derive(Clone)]
 pub struct Config {
     urls: Vec<String>,
@@ -11,6 +15,7 @@ pub struct Config {
 }
 
 impl Config {
+    /// Creates a new config struct based on command line arguments passed into the executable.
     pub fn new() -> Config {
         let m = Command::new("foo")
 
@@ -33,10 +38,14 @@ impl Config {
 
             .get_matches();
 
+        // Read the url and file provided (file xor url must be provided)
         let url: Option<&String> = m.get_one("url");
         let file: Option<&String> = m.get_one("file");
 
+        // Build the url list based on the given criteria
         let urls: Vec<String> = match (url, file) {
+
+            // If both or none are given, we have an issue
             (Some(_), Some(_)) => panic!("File and url provided, only one required"),
             (None, None) => panic!("No url provided"),
 
@@ -87,7 +96,11 @@ impl Config {
         String::from(&self.urls[index])
     }
 
-
+    /// Get the status of the connection at the url_index.
+    ///
+    /// # Errors
+    /// This method fails when the connection cannot be made and so no status code is available to
+    /// return.
     pub fn status(&self, url_index: usize) -> Result<u16, Error> {
         let response = reqwest::blocking::get(
             String::from( &self.urls[url_index] )
