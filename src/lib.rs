@@ -1,7 +1,10 @@
+use std::collections::HashMap;
 use clap::{Arg, Command };
 use reqwest;
 use reqwest::Error;
 use std::fs;
+use std::hash::Hash;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// A struct which defines the configuration we want to run our http load testing with. Each config
 /// has a list of urls (length of 1 if a URL is provided; variable length if a file is provided),
@@ -111,4 +114,61 @@ impl Config {
             Err(e) => Err(e)
         }
     }
+}
+
+
+
+/// A generic function which is useful when dealing with HashMaps that map from a certain type K
+/// to a Vector of another type V. This function consumes the map and returns a new updated map.
+/// If the key is already a part of the map, then it will push the value to the vector. If the key
+/// is not already a part of the map, it will make a new vector with the desired value.
+///
+/// # Examples
+/// ```
+/// # use std::collections::HashMap;
+/// # use httploadtesting::add_to_vector_map;
+///
+/// let mut map: HashMap< String, Vec<i32> > = HashMap::new();
+/// map = add_to_vector_map(map, String::from("hello"), 123);
+///
+/// assert_eq!( 123, map.get("hello").unwrap()[0] );
+/// ```
+pub fn add_to_vector_map<K, V>(mut map: HashMap<K, Vec<V>>, key: K, value: V) -> HashMap< K, Vec<V> >
+where
+    K: Eq,
+    K: Hash,
+    V: Clone,
+{
+    if map.contains_key(&key) {
+        let mut v = map.get(&key).unwrap().clone();
+        v.push(value);
+
+        map.insert(key, v);
+
+        // If we haven't seen the url before, make a new list with the status
+    } else {
+        map.insert(key, vec![value]);
+    }
+
+    map
+}
+
+
+/// Gets the current time since January 1, 1970. Times are returned in milliseconds, so to be used
+/// as seconds, divide by 1000 (use f64 for decimal points).
+///
+/// # Examples
+/// ```
+/// # use httploadtesting::get_time_millis;
+///
+/// let start_time = get_time_millis();
+/// std::thread::sleep(std::time::Duration::from_millis(1000));
+/// let end_time = get_time_millis();
+///
+/// let duration = end_time - start_time;
+///
+/// assert!(900 < duration && duration < 1100); // Some variability is expected
+/// ```
+pub fn get_time_millis() -> u128 {
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()
 }

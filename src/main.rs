@@ -1,23 +1,8 @@
 use std::collections::HashMap;
 use std::sync::mpsc;
-use std::time::{SystemTime, UNIX_EPOCH};
 use threadpool::ThreadPool;
 use httploadtesting::Config;
 
-/// Gets the current time since January 1, 1970. Times are returned in milliseconds, so to be used
-/// as seconds, divide by 1000 (use f64 for decimal points).
-///
-/// # Examples
-/// ```
-/// let start_time = get_time_millis();
-/// std::thread::sleep(std::time::Duration::from_millis(1000);
-/// let end_time = get_time_millis();
-///
-/// assert_eq!(1000, end_time - start_time);
-/// ```
-fn get_time_millis() -> u128 {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis()
-}
 
 /// Prints the results of our http load testing for a given url with statuses referring to if the
 /// connection was successful or not, and the times referring to how long it took to connect.
@@ -63,7 +48,6 @@ fn main() {
     let (tx_time, rx_time) = mpsc::channel();
 
     for i in 0..config.number() {
-
         let config = config.clone();
 
         let tx_status = tx_status.clone();
@@ -71,10 +55,10 @@ fn main() {
 
 
         pool.execute(move || {
-            let start_time = get_time_millis();
+            let start_time = httploadtesting::get_time_millis();
 
             // Get the status
-            match config.status(i % config.urls_len() /* HOW DO WE INCREMENT THIS VALUE */){
+            match config.status(i % config.urls_len() /* HOW DO WE INCREMENT THIS VALUE */) {
                 // Could connect but may be a page failure such as 404
                 Ok(val) => {
 
@@ -98,7 +82,7 @@ fn main() {
 
             // Send the time it took as well as what url it was
             tx_time.send(
-                (config.url(i % config.urls_len()), get_time_millis() - start_time)
+                (config.url(i % config.urls_len()), httploadtesting::get_time_millis() - start_time)
             ).unwrap();
         });
     }
@@ -109,37 +93,15 @@ fn main() {
 
     for _ in 0..config.number() {
         let (url, status) = rx_status.recv().unwrap();
-
-
-        if statuses.contains_key(&url) {
-            let mut v = statuses.get(&url).unwrap().clone();
-            v.push(status);
-
-            statuses.insert(url, v);
-
-            // If we haven't seen the url before, make a new list with the status
-        } else {
-            statuses.insert(url, vec![status]);
-        }
-
-
+        statuses = httploadtesting::add_to_vector_map(statuses, url, status);
 
         let (url, time) = rx_time.recv().unwrap();
-
-        // If we've seen the url before, add the time to the vector
-        if times.contains_key(&url) {
-            let mut v = times.get(&url).unwrap().clone();
-            v.push(time);
-
-            times.insert(url, v);
-
-            // If we haven't seen the url before, make a new list with the time
-        } else {
-            times.insert(url, vec![time]);
-        }
+        times = httploadtesting::add_to_vector_map(times, url, time);
     }
 
 
+
+    // Print the results for each url
     for url in statuses.keys() {
         print_results(url, statuses.get(url).unwrap(), times.get(url).unwrap());
     }
